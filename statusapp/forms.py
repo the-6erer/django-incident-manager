@@ -43,13 +43,13 @@ class NotificationForm(ModelForm):
         if topic and all_topic:
             self.cleaned_data['topic'] = []
 
-        if notification == 'TEAMS':
+        if notification == 'teams':
             try:
                 validator = URLValidator()
                 validator(address)
             except ValidationError:
                 self.add_error('address', 'Enter a valid URL')
-        elif notification == 'EMAIL':
+        elif notification == 'email':
             try:
                 validate_email(address)
             except ValidationError:

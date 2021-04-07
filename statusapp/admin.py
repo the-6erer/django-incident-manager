@@ -57,6 +57,8 @@ class NotificationAdmin(admin.ModelAdmin):
     form = NotificationForm
 
     def get_topics(self, obj):
+        if obj.all_topic:
+            return "*"
         return ",\n".join([p.name for p in obj.topic.all()])
     get_topics.short_description = 'Topics'
 

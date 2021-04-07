@@ -41,7 +41,7 @@ class IncidentUpdate(models.Model):
         ('INVESTIGATING', 'Investigating'),
         ('RESOLVED', 'Resolved'),
     ]
-    incident = models.ForeignKey('Incident', on_delete=models.CASCADE)
+    incident = models.ForeignKey('Incident', related_name='incident_updates', on_delete=models.CASCADE)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES)
     description = models.CharField(max_length=500)
     timestamp = models.DateTimeField(default=now)
@@ -50,21 +50,25 @@ class IncidentUpdate(models.Model):
 
 class Notification(models.Model):
     NOTIFY_CHOICES = [
-        ('TEAMS', 'Microsoft Teams'),
-        ('EMAIL', 'Email'),
+        ('teams', 'Microsoft Teams'),
+        ('email', 'Email'),
     ]
     SUBJECT_CHOICES = (
-        ('INCIDENT', 'Incident'),
-        ('MAINTENANCE', 'Maintenance'),
+        ('incident', 'Incident'),
+        ('maintenance', 'Maintenance'),
     )
     notification = models.CharField(max_length=50, choices=NOTIFY_CHOICES)
     address = models.CharField(max_length=400, help_text='Enter Incoming Webhook URL or Email address depending on the notification type')
     topic = models.ManyToManyField('Topic', blank=True)
     all_topic = models.BooleanField(default=False, verbose_name="All topics", help_text='If selected, above topics will automatically be unselected')
     subject = MultiSelectField(choices=SUBJECT_CHOICES, default='Incident')
-    
+
+    class Meta:
+        unique_together = ('notification', 'address')
+
     def __str__(self):
         return "%s - %s" % (self.notification, self.address)
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
@@ -85,9 +89,9 @@ def send_alert(sender, instance, created, **kwargs):
             incident.save()
         notifylist = Notification.objects.filter(topic = instance.incident.topic) | Notification.objects.filter(all_topic = True)
         for notify in notifylist:
-            if notify.notification == 'TEAMS':
+            if notify.notification == 'teams':
                 alertTeams(instance, notify)
-            elif notify.notification == 'EMAIL':
+            elif notify.notification == 'email':
                 alertEmail(instance, notify)
 
 def alertTeams(instance, notify):
